@@ -1,0 +1,77 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String       @id @default(cuid()) @map("_id")
+  email         String       @unique
+  password      String
+  name          String
+  role          String       @default("PATIENT")
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  patient       Patient?
+  doctor        Doctor?
+}
+
+model Patient {
+  id            String       @id @default(cuid()) @map("_id")
+  userId        String       @unique
+  user          User         @relation(fields: [userId], references: [id])
+  phoneNumber   String?
+  appointments  Appointment[]
+}
+
+model Doctor {
+  id                String       @id @default(cuid()) @map("_id")
+  userId            String       @unique
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialty         String
+  experience        String
+  location          String
+  address           String
+  expertise         String[]
+  languages         String[]
+  consultationFee   String
+  available         Boolean      @default(true)
+  videoConsultation Boolean      @default(true)
+  image             String
+  appointments      Appointment[]
+  timeSlots         TimeSlot[]
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
+model TimeSlot {
+  id        String   @id @default(cuid()) @map("_id")
+  doctorId  String
+  doctor    Doctor   @relation(fields: [doctorId], references: [id])
+  date      DateTime
+  time      String
+  isBooked  Boolean  @default(false)
+  appointment Appointment?
+  
+  @@unique([doctorId, date, time])
+}
+
+model Appointment {
+  id          String   @id @default(cuid()) @map("_id")
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  doctorId    String
+  doctor      Doctor   @relation(fields: [doctorId], references: [id])
+  slotId      String   @unique
+  slot        TimeSlot @relation(fields: [slotId], references: [id])
+  type        String
+  status      String   @default("SCHEDULED")
+  symptoms    String
+  notes       String?
+  completedBy String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
